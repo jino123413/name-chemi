@@ -109,61 +109,52 @@ function DayIcon({ emoji }: { emoji: string }) {
   return <span className="weekly-day-icon">{dayIcons[emoji] ?? defaultDayIcon}</span>;
 }
 
-/** 자력 게이지 — 반원형 미터 5개 */
+/** 자력 게이지 — 반원형 미터 5개 (단일 path + dashoffset) */
 function MagneticGauges({ attributes, color }: { attributes: Record<ChemiAttribute, number>; color: string }) {
   const attrs: ChemiAttribute[] = ['talk', 'humor', 'emotion', 'stability', 'passion'];
-  const gaugeSize = 56;
-  const cx = gaugeSize / 2;
-  const cy = gaugeSize / 2;
   const r = 22;
   const strokeW = 5;
+  const svgW = r * 2 + strokeW + 4; // 좌우 여백
+  const svgH = r + strokeW + 10;     // 위 여백 + 아래 바늘 공간
+  const cx = svgW / 2;
+  const cy = r + strokeW / 2 + 2;   // 아크 아래 기준선
+  const arcLen = Math.PI * r;        // 반원 둘레
+
+  // 공통 path (모든 게이지 동일 — 정렬 보장)
+  const arcPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx + r} ${cy}`;
 
   return (
     <div className="gauge-container">
       {attrs.map((attr) => {
-        const value = attributes[attr] / 100; // 0~1
+        const value = attributes[attr] / 100;
+        const dashOffset = arcLen * (1 - value);
 
-        // Arc angles: left (π) → right (0), counter-clockwise upward
-        const startAngle = Math.PI;
-        const sweepAngle = Math.PI * value;
-        const endAngle = startAngle - sweepAngle;
-
-        // Background arc endpoints (full semicircle: left to right)
-        const bgX1 = cx + r * Math.cos(startAngle); // left
-        const bgY1 = cy - r * Math.sin(startAngle);
-        const bgX2 = cx + r * Math.cos(0);           // right
-        const bgY2 = cy - r * Math.sin(0);
-
-        // Fill arc endpoint
-        const fillX2 = cx + r * Math.cos(endAngle);
-        const fillY2 = cy - r * Math.sin(endAngle);
-
-        // Needle endpoint
-        const needleLen = r - 3;
-        const needleX = cx + needleLen * Math.cos(endAngle);
-        const needleY = cy - needleLen * Math.sin(endAngle);
-
-        // sweep-flag=0 → counter-clockwise in SVG → draws UPWARD semicircle
-        const bgPath = `M ${bgX1} ${bgY1} A ${r} ${r} 0 0 0 ${bgX2} ${bgY2}`;
-        const fillPath = value > 0.01
-          ? `M ${bgX1} ${bgY1} A ${r} ${r} 0 0 0 ${fillX2} ${fillY2}`
-          : '';
+        // 바늘 각도: 왼쪽(π)에서 value만큼 시계방향
+        const needleAngle = Math.PI - Math.PI * value;
+        const needleLen = r - 4;
+        const needleX = cx + needleLen * Math.cos(needleAngle);
+        const needleY = cy - needleLen * Math.sin(needleAngle);
 
         return (
           <div key={attr} className="gauge-item">
-            <svg width={gaugeSize} height={gaugeSize / 2 + 8} viewBox={`0 0 ${gaugeSize} ${gaugeSize / 2 + 8}`}>
-              {/* Background arc */}
-              <path d={bgPath} fill="none" stroke="#E8E8E8" strokeWidth={strokeW} strokeLinecap="round" />
-              {/* Filled arc */}
-              {fillPath && (
-                <path d={fillPath} fill="none" stroke={color} strokeWidth={strokeW} strokeLinecap="round" className="gauge-fill" />
-              )}
+            <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+              {/* Background arc (gray, full) */}
+              <path d={arcPath} fill="none" stroke="#E8E8E8" strokeWidth={strokeW} strokeLinecap="round" />
+              {/* Fill arc (colored, partial via dashoffset) */}
+              <path
+                d={arcPath}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeW}
+                strokeLinecap="round"
+                strokeDasharray={arcLen}
+                strokeDashoffset={dashOffset}
+              />
               {/* Center pivot */}
-              <circle cx={cx} cy={cy} r={2.5} fill="#AAA" />
+              <circle cx={cx} cy={cy} r={2} fill="#BBB" />
               {/* Needle */}
-              <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#555" strokeWidth={1.5} strokeLinecap="round" />
-              {/* Needle tip */}
-              <circle cx={needleX} cy={needleY} r={2.5} fill={color} />
+              <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#666" strokeWidth={1.5} strokeLinecap="round" />
+              <circle cx={needleX} cy={needleY} r={2} fill={color} />
             </svg>
             <span className="gauge-label">{CHEMI_ATTRIBUTE_LABELS[attr]}</span>
           </div>
