@@ -42,7 +42,7 @@ const InputScreen: React.FC<InputScreenProps> = ({ onCalculate, recentSearches }
         <div className="input-mascot-wrap">
           <span className="input-mascot-emoji">🧲</span>
         </div>
-        <h1>우리 케미</h1>
+        <h1>이름 케미</h1>
         <p>두 이름 사이의 끌림을 측정해볼까?</p>
       </div>
 
