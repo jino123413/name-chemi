@@ -82,7 +82,7 @@ function ECGWaveform({ attributes, color }: { attributes: Record<ChemiAttribute,
               textAnchor="middle"
               fontSize={9}
               fontWeight={600}
-              fontFamily="'GmarketSans', sans-serif"
+              fontFamily="'Jalnan2', sans-serif"
               fill="#757575"
             >
               {CHEMI_ATTRIBUTE_LABELS[attrs[i]]}
@@ -137,6 +137,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
       {/* One-liner — 끌림이 한줄평 */}
       <div className="result-card card section-gap">
         <div className="mascot-oneliner">
+          <img src="/mascot/mascot-main-64.png" alt="끌림이" className="mascot-oneliner-img" />
           <span className="mascot-oneliner-icon">🧲</span>
           <p className="mascot-oneliner-text">{result.oneLiner}</p>
         </div>
@@ -169,6 +170,11 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
       {/* Mascot Speech Bubble — 끌림이 조언 */}
       <div className="mascot-advice-section section-gap">
         <div className="mascot-advice-bubble">
+          <img
+            src={result.level.level >= 3 ? '/mascot/mascot-happy-64.png' : result.level.level >= 2 ? '/mascot/mascot-thinking-64.png' : '/mascot/mascot-sad-64.png'}
+            alt="끌림이"
+            className="mascot-advice-img"
+          />
           <span className="mascot-advice-icon">🧲</span>
           <div className="speech-bubble">
             <span className="speech-bubble-label">끌림이의 한마디</span>

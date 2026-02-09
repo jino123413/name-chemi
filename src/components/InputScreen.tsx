@@ -40,6 +40,7 @@ const InputScreen: React.FC<InputScreenProps> = ({ onCalculate, recentSearches }
       {/* Header */}
       <div className="input-header">
         <div className="input-mascot-wrap">
+          <img src="/mascot/mascot-main.png" alt="끌림이" className="input-mascot-img" />
           <span className="input-mascot-emoji">🧲</span>
         </div>
         <h1>우리 케미</h1>
