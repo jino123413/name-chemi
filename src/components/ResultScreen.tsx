@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChemiResult, WeeklyChemiForecast, ATTRACTION_LEVELS, CHEMI_ATTRIBUTE_LABELS, ChemiAttribute } from '../types';
 import { getStrongestAttribute, getWeakestAttribute } from '../utils/chemi-engine';
 import MagneticField from './MagneticField';
@@ -112,12 +112,15 @@ function DayIcon({ emoji }: { emoji: string }) {
 /** 자력 게이지 — 반원형 미터 5개 (단일 path + dashoffset) */
 function MagneticGauges({ attributes, color }: { attributes: Record<ChemiAttribute, number>; color: string }) {
   const attrs: ChemiAttribute[] = ['talk', 'humor', 'emotion', 'stability', 'passion'];
-  const r = 22;
+  const r = 24;
   const strokeW = 5;
-  const svgW = r * 2 + strokeW + 4; // 좌우 여백
-  const svgH = r + strokeW + 10;     // 위 여백 + 아래 바늘 공간
-  const cx = svgW / 2;
-  const cy = r + strokeW / 2 + 2;   // 아크 아래 기준선
+  const topPad = strokeW / 2 + 4;    // 상단: 선 두께 + 여백
+  const cx_half = r + strokeW / 2 + 3; // 좌우 반폭
+  const svgW = cx_half * 2;
+  const cx = cx_half;
+  const cy = topPad + r;             // 아크 꼭대기가 topPad에 위치
+  const botPad = strokeW / 2 + 18;   // 하단: 선 두께 + 피벗 + 넉넉한 여백
+  const svgH = cy + botPad;          // 아크 아래 충분한 공간
   const arcLen = Math.PI * r;        // 반원 둘레
 
   // 공통 path (모든 게이지 동일 — 정렬 보장)
@@ -139,14 +142,14 @@ function MagneticGauges({ attributes, color }: { attributes: Record<ChemiAttribu
           <div key={attr} className="gauge-item">
             <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
               {/* Background arc (gray, full) */}
-              <path d={arcPath} fill="none" stroke="#E8E8E8" strokeWidth={strokeW} strokeLinecap="round" />
+              <path d={arcPath} fill="none" stroke="#CFCFCF" strokeWidth={strokeW} strokeLinecap="round" />
               {/* Fill arc (colored, partial via dashoffset) */}
               <path
                 d={arcPath}
                 fill="none"
                 stroke={color}
                 strokeWidth={strokeW}
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 strokeDasharray={arcLen}
                 strokeDashoffset={dashOffset}
               />
@@ -164,6 +167,86 @@ function MagneticGauges({ attributes, color }: { attributes: Record<ChemiAttribu
   );
 }
 
+// ─── 통합 가이드 모달 (자력선 + 게이지) ───
+const GUIDE_LEVELS = [
+  { level: 5 as const, fill: 0.9, name: '운명의 끌림', gaugeTip: '자석처럼 딱 달라붙는 자기장!', fieldTip: '자력선이 빽빽하고 빠르게 흐르며 파티클이 폭발해!' },
+  { level: 4 as const, fill: 0.7, name: '강한 케미', gaugeTip: '충분히 끌리는 자력이야', fieldTip: '많은 자력선이 활발하게 흐르고 있어' },
+  { level: 3 as const, fill: 0.5, name: '은근한 설렘', gaugeTip: '은근히 끌리는 느낌', fieldTip: '자력선이 느리게 흐르며 살짝 끌림이 느껴져' },
+  { level: 2 as const, fill: 0.3, name: '미지근한 기류', gaugeTip: '아직 자력이 약해', fieldTip: '자력선이 흐릿하고 느리게 흔들려' },
+  { level: 1 as const, fill: 0.1, name: '평행선', gaugeTip: '거의 감지 안 됨', fieldTip: '자력선이 거의 없고 정지 상태야' },
+];
+
+function ChemiGuide({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  const r = 16;
+  const strokeW = 3.5;
+  const topPad = strokeW / 2 + 3;
+  const cxHalf = r + strokeW / 2 + 2;
+  const svgW = cxHalf * 2;
+  const cx = cxHalf;
+  const cy = topPad + r;
+  const botPad = strokeW / 2 + 6;
+  const svgH = cy + botPad;
+  const arcLen = Math.PI * r;
+  const arcPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx + r} ${cy}`;
+
+  return (
+    <div className="legend-overlay" onClick={onClose}>
+      <div className="legend-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="legend-handle" />
+        <p className="legend-title">케미 분석 가이드</p>
+        <p className="legend-subtitle">끌림 레벨에 따라 자력선과 게이지가 달라져요</p>
+        <div className="guide-level-list">
+          {GUIDE_LEVELS.map((item) => {
+            const info = ATTRACTION_LEVELS[item.level];
+            const dashOffset = arcLen * (1 - item.fill);
+            const needleAngle = Math.PI - Math.PI * item.fill;
+            const needleLen = r - 3;
+            const needleX = cx + needleLen * Math.cos(needleAngle);
+            const needleY = cy - needleLen * Math.sin(needleAngle);
+
+            return (
+              <div key={item.level} className="guide-level-row">
+                <div className="guide-level-header">
+                  <span className="guide-level-name" style={{ color: info.color }}>{item.name}</span>
+                </div>
+                <div className="guide-level-visuals">
+                  <div className="guide-field-mini">
+                    <MagneticField level={item.level} name1="" name2="" animated={false} />
+                  </div>
+                  <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+                    <path d={arcPath} fill="none" stroke="#CFCFCF" strokeWidth={strokeW} strokeLinecap="round" />
+                    <path d={arcPath} fill="none" stroke={info.color} strokeWidth={strokeW} strokeLinecap="butt"
+                      strokeDasharray={arcLen} strokeDashoffset={dashOffset} />
+                    <circle cx={cx} cy={cy} r={1.5} fill="#BBB" />
+                    <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#666" strokeWidth={1} strokeLinecap="round" />
+                    <circle cx={needleX} cy={needleY} r={1.5} fill={info.color} />
+                  </svg>
+                </div>
+                <div className="guide-level-tips">
+                  <span className="guide-tip">{item.fieldTip}</span>
+                  <span className="guide-tip-sub">{item.gaugeTip}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button className="legend-close-btn" onClick={onClose}>확인</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Info icon SVG ───
+const SvgInfo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BDBDBD" strokeWidth="2" strokeLinecap="round" style={{ verticalAlign: 'middle', cursor: 'pointer' }}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
 const ResultScreen: React.FC<ResultScreenProps> = ({
   result,
   weeklyForecast,
@@ -172,6 +255,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
   onRetry,
   adLoading,
 }) => {
+  const [guideOpen, setGuideOpen] = useState(false);
   const strongest = getStrongestAttribute(result.attributes);
   const weakest = getWeakestAttribute(result.attributes);
   const levelClass = ['', 'level-parallel', 'level-lukewarm', 'level-subtle', 'level-strong', 'level-destiny'][result.level.level];
@@ -214,7 +298,10 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
 
       {/* Magnetic Gauges — 5속성 자력 게이지 */}
       <div className="result-card card section-gap">
-        <p className="result-card-title">케미 자력 분석</p>
+        <p className="result-card-title">
+          케미 자력 분석
+          <span className="legend-info-btn" onClick={() => setGuideOpen(true)}><SvgInfo /></span>
+        </p>
         <MagneticGauges attributes={result.attributes} color={result.level.color} />
         <div className="gauge-summary">
           <span className="gauge-summary-item gauge-strong">
@@ -302,6 +389,9 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
           <SvgRefresh /> 다른 이름으로 측정하기
         </button>
       </div>
+
+      {/* Guide Modal */}
+      <ChemiGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 };

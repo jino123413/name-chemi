@@ -17,26 +17,48 @@ interface RecentSearch {
   timestamp: number;
 }
 
-async function loadRecent(): Promise<RecentSearch[]> {
+async function storageGet(key: string): Promise<string | null> {
   try {
     const { Storage } = await import('@apps-in-toss/web-framework');
-    const raw = await Storage.getItem(STORAGE_KEY);
+    const val = await Storage.getItem(key);
+    if (val != null) return val;
+  } catch {}
+  return localStorage.getItem(key);
+}
+
+async function storageSet(key: string, value: string): Promise<void> {
+  try {
+    const { Storage } = await import('@apps-in-toss/web-framework');
+    await Storage.setItem(key, value);
+  } catch {}
+  localStorage.setItem(key, value);
+}
+
+async function loadRecent(): Promise<RecentSearch[]> {
+  try {
+    const raw = await storageGet(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
   return [];
 }
 
 async function saveRecent(name1: string, name2: string) {
-  try {
-    const { Storage } = await import('@apps-in-toss/web-framework');
-    const list = await loadRecent();
-    const filtered = list.filter(
-      (r) => !(r.name1 === name1 && r.name2 === name2),
-    );
-    filtered.unshift({ name1, name2, timestamp: Date.now() });
-    const trimmed = filtered.slice(0, 5);
-    await Storage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch {}
+  const list = await loadRecent();
+  const filtered = list.filter(
+    (r) => !(r.name1 === name1 && r.name2 === name2),
+  );
+  filtered.unshift({ name1, name2, timestamp: Date.now() });
+  const trimmed = filtered.slice(0, 5);
+  await storageSet(STORAGE_KEY, JSON.stringify(trimmed));
+}
+
+async function deleteRecent(name1: string, name2: string): Promise<RecentSearch[]> {
+  const list = await loadRecent();
+  const filtered = list.filter(
+    (r) => !(r.name1 === name1 && r.name2 === name2),
+  );
+  await storageSet(STORAGE_KEY, JSON.stringify(filtered));
+  return filtered;
 }
 
 const App: React.FC = () => {
@@ -89,6 +111,10 @@ const App: React.FC = () => {
     });
   }, [showInterstitialAd]);
 
+  const handleDeleteRecent = useCallback((name1: string, name2: string) => {
+    deleteRecent(name1, name2).then(setRecentSearches);
+  }, []);
+
   const handleRetry = useCallback(() => {
     setPhase('input');
     setResult(null);
@@ -108,6 +134,7 @@ const App: React.FC = () => {
         <InputScreen
           onCalculate={handleCalculate}
           recentSearches={recentSearches}
+          onDeleteRecent={handleDeleteRecent}
         />
       )}
 

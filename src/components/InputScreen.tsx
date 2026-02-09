@@ -9,9 +9,10 @@ interface RecentSearch {
 interface InputScreenProps {
   onCalculate: (name1: string, name2: string) => void;
   recentSearches: RecentSearch[];
+  onDeleteRecent: (name1: string, name2: string) => void;
 }
 
-const InputScreen: React.FC<InputScreenProps> = ({ onCalculate, recentSearches }) => {
+const InputScreen: React.FC<InputScreenProps> = ({ onCalculate, recentSearches, onDeleteRecent }) => {
   const [name1, setName1] = useState('');
   const [name2, setName2] = useState('');
   const name1Ref = useRef<HTMLInputElement>(null);
@@ -113,14 +114,22 @@ const InputScreen: React.FC<InputScreenProps> = ({ onCalculate, recentSearches }
           <p className="recent-title">최근 측정</p>
           <div className="recent-list">
             {recentSearches.map((s, i) => (
-              <button
-                key={`${s.name1}-${s.name2}-${i}`}
-                className="recent-chip"
-                onClick={() => handleRecentClick(s)}
-              >
-                <svg className="recent-chip-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M4 2h4v10a4 4 0 0 0 8 0V2h4v10a8 8 0 0 1-16 0V2z" fill="currentColor" opacity="0.5"/><rect x="4" y="2" width="4" height="4" rx="0.5" fill="#FF1744"/><rect x="16" y="2" width="4" height="4" rx="0.5" fill="#2196F3"/></svg>
-                <span>{s.name1} × {s.name2}</span>
-              </button>
+              <div key={`${s.name1}-${s.name2}-${i}`} className="recent-chip">
+                <button
+                  className="recent-chip-body"
+                  onClick={() => handleRecentClick(s)}
+                >
+                  <svg className="recent-chip-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M4 2h4v10a4 4 0 0 0 8 0V2h4v10a8 8 0 0 1-16 0V2z" fill="currentColor" opacity="0.5"/><rect x="4" y="2" width="4" height="4" rx="0.5" fill="#FF1744"/><rect x="16" y="2" width="4" height="4" rx="0.5" fill="#2196F3"/></svg>
+                  <span>{s.name1} × {s.name2}</span>
+                </button>
+                <button
+                  className="recent-chip-delete"
+                  onClick={(e) => { e.stopPropagation(); onDeleteRecent(s.name1, s.name2); }}
+                  aria-label="삭제"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+              </div>
             ))}
           </div>
         </div>
