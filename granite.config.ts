@@ -13,7 +13,7 @@ export default defineConfig({
   permissions: [],
   outdir: 'dist',
   brand: {
-    displayName: '이름 케미',
+    displayName: '우리 케미',
     icon: 'https://raw.githubusercontent.com/jino123413/app-logos/master/name-chemi.png',
     primaryColor: '#FF7043',
     bridgeColorMode: 'basic',
