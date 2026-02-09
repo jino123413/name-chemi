@@ -601,13 +601,7 @@ button {
   animation: magnetPulse 2s ease-in-out infinite;
 }
 
-.input-mascot-emoji {
-  font-size: 24px;
-  position: absolute;
-  bottom: -4px;
-  right: -8px;
-  animation: magnetPulse 3s ease-in-out infinite;
-}
+/* input-mascot-emoji removed — using mascot image only */
 
 .input-form {
   flex: 1;
@@ -622,12 +616,12 @@ button {
   animation: fadeIn 0.5s ease-out 0.15s both;
 }
 
-.versus-magnet {
-  font-size: 20px;
+.versus-magnet-svg {
+  color: var(--text-muted);
   animation: magnetPulse 3s ease-in-out infinite;
 }
 
-.versus-magnet:last-child {
+.versus-magnet-svg:last-of-type {
   animation-delay: 1.5s;
 }
 
@@ -705,12 +699,7 @@ button {
   animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s both;
 }
 
-.reveal-magnet-icon {
-  font-size: 24px;
-  display: inline-block;
-  animation: magnetPulse 1s ease-in-out 0.8s infinite;
-  margin-top: -8px;
-}
+/* reveal-magnet-icon removed — using mascot image only */
 
 .reveal-message {
   position: absolute;
@@ -747,13 +736,7 @@ button {
   flex-shrink: 0;
 }
 
-.mascot-oneliner-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-  margin-left: -12px;
-  margin-top: 28px;
-  animation: magnetPulse 2s ease-in-out infinite;
-}
+/* mascot-oneliner-icon removed — using mascot image only */
 
 .mascot-oneliner-text {
   font-size: 15px;
@@ -762,50 +745,61 @@ button {
   line-height: 1.7;
 }
 
-/* ===== ECG Waveform ===== */
-.ecg-container {
-  margin: 8px 0;
+/* ===== Magnetic Gauges ===== */
+.gauge-container {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px 0 8px;
 }
 
-.ecg-svg {
-  width: 100%;
-  height: auto;
-  display: block;
+.gauge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
-.ecg-path {
-  animation: ecgDraw 1.2s ease-out both;
+.gauge-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font);
 }
 
-@keyframes ecgDraw {
+.gauge-fill {
+  animation: gaugeFill 0.8s ease-out both;
+}
+
+.gauge-needle {
+  animation: needleSwing 0.6s ease-out 0.2s both;
+  transform-origin: center;
+}
+
+@keyframes gaugeFill {
   from {
-    stroke-dasharray: 600;
-    stroke-dashoffset: 600;
+    stroke-dasharray: 80;
+    stroke-dashoffset: 80;
   }
   to {
-    stroke-dasharray: 600;
+    stroke-dasharray: 80;
     stroke-dashoffset: 0;
   }
 }
 
-.ecg-summary {
+.gauge-summary {
   display: flex;
   justify-content: center;
   gap: 16px;
   margin-top: 10px;
 }
 
-.ecg-summary-item {
-  display: flex;
+.gauge-summary-item {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
-}
-
-.ecg-summary-item i {
-  font-size: 14px;
 }
 
 /* ===== Scenario Text ===== */
@@ -834,12 +828,7 @@ button {
   flex-shrink: 0;
 }
 
-.mascot-advice-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-  margin-left: -12px;
-  margin-top: 28px;
-}
+/* mascot-advice-icon removed — using mascot image only */
 
 .speech-bubble {
   background: var(--bg-card);
@@ -959,39 +948,49 @@ button {
 }
 
 .weekly-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .weekly-day {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 2px;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 10px;
 }
 
 .weekly-day-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .weekly-day-emoji {
   font-size: 18px;
+  flex-shrink: 0;
+}
+
+.weekly-day-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
 }
 
 .weekly-day-msg {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--text-secondary);
-  text-align: center;
-  line-height: 1.3;
+  line-height: 1.4;
   word-break: keep-all;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  flex: 1;
 }
 
 /* ===== Retry Section ===== */

@@ -59,7 +59,6 @@ const RevealScreen: React.FC<RevealScreenProps> = ({ result }) => {
         {/* Center magnet icon */}
         <div className="reveal-magnet">
           <img src="/mascot/mascot-thinking.png" alt="끌림이" className="reveal-mascot-img" />
-          <span className="reveal-magnet-icon">🧲</span>
         </div>
 
         {/* Message */}

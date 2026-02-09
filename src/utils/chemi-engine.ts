@@ -74,15 +74,18 @@ export function calculateChemi(
   // 총점 (0-100)
   const totalScore = hashToRange(baseHash, 100, 0);
 
-  // 5개 속성 점수 (총점 주변 ±20 분산)
+  // 5개 속성 점수 — 속성명으로 독립 해시 (총점과 50:50 블렌드)
   const ATTRIBUTES: ChemiAttribute[] = ['talk', 'humor', 'emotion', 'stability', 'passion'];
   const attributes = {} as Record<ChemiAttribute, number>;
   const attributeLevels = {} as Record<ChemiAttribute, AttractionLevelInfo>;
 
-  ATTRIBUTES.forEach((attr, i) => {
-    const offset = hashToRange(baseHash, 40, i + 1); // 0~40
-    const raw = totalScore + (offset - 20); // ±20 분산
-    const score = Math.max(0, Math.min(100, raw));
+  ATTRIBUTES.forEach((attr) => {
+    // 속성명을 시드에 포함하여 완전히 독립된 해시 생성
+    const attrHash = hashString(`${seed}:attr:${attr}`);
+    const independent = attrHash % 101; // 0~100 독립 점수
+    // 총점과 블렌드: 레벨 상관성 유지 + 충분한 분산
+    const blended = Math.round(totalScore * 0.4 + independent * 0.6);
+    const score = Math.max(10, Math.min(95, blended));
     attributes[attr] = score;
     attributeLevels[attr] = getLevelInfo(score);
   });

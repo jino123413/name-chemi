@@ -12,84 +12,163 @@ interface ResultScreenProps {
   adLoading: boolean;
 }
 
-/** ECG-style waveform for 5 attributes */
-function ECGWaveform({ attributes, color }: { attributes: Record<ChemiAttribute, number>; color: string }) {
+// ─── 한글 받침(종성) 판별 ───
+function hasJongseong(str: string): boolean {
+  const last = str.charCodeAt(str.length - 1);
+  if (last < 0xAC00 || last > 0xD7A3) return false;
+  return (last - 0xAC00) % 28 !== 0;
+}
+
+// ─── Color palette ───
+const C1 = '#FF7043'; // warm orange (primary)
+const C2 = '#FFAB91'; // peach (accent)
+
+// ─── Inline SVG Icons ───
+const SvgArrowUp = ({ color }: { color: string }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={color} style={{ verticalAlign: 'middle', marginRight: 4 }}>
+    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 5l-5 5h3v4h4v-4h3l-5-5z"/>
+  </svg>
+);
+
+const SvgArrowDown = ({ color }: { color: string }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={color} style={{ verticalAlign: 'middle', marginRight: 4 }}>
+    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 17l5-5h-3V10h-4v4H7l5 5z"/>
+  </svg>
+);
+
+const SvgRefresh = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 4 }}>
+    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+    <polyline points="21 3 21 8 16 8"/>
+    <polyline points="3 21 3 16 8 16"/>
+  </svg>
+);
+
+const SvgLock = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BDBDBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+
+// ─── Day Icons — 20개 인라인 SVG (warm orange 2색) ───
+const dayIcons: Record<string, React.ReactNode> = {
+  // sun
+  '☀️': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill={C1}/>{[0,45,90,135,180,225,270,315].map(a=><line key={a} x1={12+8*Math.cos(a*Math.PI/180)} y1={12+8*Math.sin(a*Math.PI/180)} x2={12+10*Math.cos(a*Math.PI/180)} y2={12+10*Math.sin(a*Math.PI/180)} stroke={C2} strokeWidth="2" strokeLinecap="round"/>)}</svg>,
+  // flower
+  '🌸': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill={C1}/>{[0,72,144,216,288].map(a=><circle key={a} cx={12+5*Math.cos(a*Math.PI/180)} cy={12+5*Math.sin(a*Math.PI/180)} r="3.5" fill={C2} opacity="0.7"/>)}</svg>,
+  // cup
+  '☕': <svg width="22" height="22" viewBox="0 0 24 24"><rect x="5" y="8" width="11" height="10" rx="2" fill={C2}/><path d="M16 10h2a2 2 0 0 1 0 4h-2" stroke={C1} strokeWidth="1.5" fill="none"/><path d="M7 6c1-2 3-2 4 0s3 2 4 0" stroke={C1} strokeWidth="1.5" fill="none" strokeLinecap="round"/><line x1="5" y1="20" x2="16" y2="20" stroke={C1} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  // music
+  '🎵': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="7" cy="17" r="3" fill={C2}/><circle cx="17" cy="15" r="3" fill={C2}/><path d="M10 17V5l10-2v12" stroke={C1} strokeWidth="2" fill="none"/></svg>,
+  // book
+  '📚': <svg width="22" height="22" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="16" rx="1" fill={C1} opacity="0.8"/><rect x="9" y="3" width="6" height="16" rx="1" fill={C2}/><rect x="14" y="5" width="6" height="16" rx="1" fill={C1} opacity="0.6"/></svg>,
+  // bear
+  '🧸': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="13" r="7" fill={C2}/><circle cx="7" cy="7" r="3" fill={C2}/><circle cx="17" cy="7" r="3" fill={C2}/><circle cx="7" cy="7" r="1.5" fill={C1}/><circle cx="17" cy="7" r="1.5" fill={C1}/><circle cx="10" cy="12" r="1" fill={C1}/><circle cx="14" cy="12" r="1" fill={C1}/><ellipse cx="12" cy="14.5" rx="2" ry="1.5" fill={C1} opacity="0.6"/></svg>,
+  // moon
+  '🌙': <svg width="22" height="22" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill={C2}/><circle cx="17" cy="7" r="1" fill={C1}/><circle cx="19" cy="11" r="0.7" fill={C1} opacity="0.6"/></svg>,
+  // tent/circus
+  '🎪': <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 2L3 18h18L12 2z" fill={C2}/><path d="M12 2L8 18" stroke={C1} strokeWidth="1.5"/><path d="M12 2L16 18" stroke={C1} strokeWidth="1.5"/><line x1="5" y1="18" x2="19" y2="18" stroke={C1} strokeWidth="2"/></svg>,
+  // wave
+  '🌊': <svg width="22" height="22" viewBox="0 0 24 24"><path d="M2 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke={C1} strokeWidth="2.5" fill="none" strokeLinecap="round"/><path d="M2 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke={C2} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>,
+  // leaf
+  '🍃': <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3C6 3 3 8 3 14c3-2 6-3 9-3s6 1 9 3c0-6-3-11-9-11z" fill={C2}/><path d="M12 8v10" stroke={C1} strokeWidth="1.5" strokeLinecap="round"/><path d="M12 12c-2-1-4-1-6 0" stroke={C1} strokeWidth="1" fill="none" strokeLinecap="round"/></svg>,
+  // palette
+  '🎨': <svg width="22" height="22" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="9" fill={C2} opacity="0.5"/><circle cx="8" cy="9" r="2" fill={C1}/><circle cx="14" cy="8" r="1.5" fill={C1} opacity="0.7"/><circle cx="17" cy="12" r="1.5" fill={C1} opacity="0.5"/><circle cx="8" cy="14" r="1.5" fill={C2}/></svg>,
+  // piano
+  '🎹': <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" fill={C2}/><rect x="6" y="6" width="3" height="7" rx="0.5" fill={C1}/><rect x="11" y="6" width="3" height="7" rx="0.5" fill={C1}/><rect x="16" y="6" width="3" height="7" rx="0.5" fill={C1}/></svg>,
+  // house
+  '🏠': <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9" stroke={C1} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/><rect x="5" y="12" width="14" height="9" fill={C2}/><rect x="10" y="15" width="4" height="6" fill={C1} opacity="0.6"/></svg>,
+  // sunny
+  '🌤️': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="10" cy="10" r="4" fill={C1} opacity="0.8"/>{[0,60,120,180,240,300].map(a=><line key={a} x1={10+5.5*Math.cos(a*Math.PI/180)} y1={10+5.5*Math.sin(a*Math.PI/180)} x2={10+7*Math.cos(a*Math.PI/180)} y2={10+7*Math.sin(a*Math.PI/180)} stroke={C2} strokeWidth="1.5" strokeLinecap="round"/>)}<path d="M14 16c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4H14z" fill={C2} opacity="0.6"/></svg>,
+  // theater
+  '🎭': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="9" cy="10" r="6" fill={C2}/><path d="M7 12c0 1.5 1 3 2 3s2-1.5 2-3" stroke={C1} strokeWidth="1.2" fill="none"/><circle cx="7.5" cy="9" r="0.8" fill={C1}/><circle cx="10.5" cy="9" r="0.8" fill={C1}/><circle cx="16" cy="10" r="6" fill={C1} opacity="0.5"/><path d="M14 13c0-1 1-2 2-2s2 1 2 2" stroke={C2} strokeWidth="1.2" fill="none"/><circle cx="14.5" cy="9" r="0.8" fill={C2}/><circle cx="17.5" cy="9" r="0.8" fill={C2}/></svg>,
+  // donut
+  '🍩': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill={C2}/><circle cx="12" cy="12" r="3" fill="white"/><circle cx="9" cy="9" r="1" fill={C1}/><circle cx="15" cy="9" r="1" fill={C1}/><circle cx="14" cy="14" r="1" fill={C1}/></svg>,
+  // hibiscus
+  '🌺': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill={C1}/>{[0,72,144,216,288].map(a=><ellipse key={a} cx={12+5*Math.cos(a*Math.PI/180)} cy={12+5*Math.sin(a*Math.PI/180)} rx="3.5" ry="2.5" fill={C2} transform={`rotate(${a+90} ${12+5*Math.cos(a*Math.PI/180)} ${12+5*Math.sin(a*Math.PI/180)})`}/>)}</svg>,
+  // phone
+  '📱': <svg width="22" height="22" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2" fill={C2}/><rect x="8" y="5" width="8" height="12" rx="1" fill="white" opacity="0.5"/><circle cx="12" cy="19" r="1" fill={C1}/></svg>,
+  // target
+  '🎯': <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke={C2} strokeWidth="2.5"/><circle cx="12" cy="12" r="5" fill="none" stroke={C1} strokeWidth="2.5"/><circle cx="12" cy="12" r="2" fill={C1}/></svg>,
+  // puzzle
+  '🧩': <svg width="22" height="22" viewBox="0 0 24 24"><rect x="4" y="4" width="8" height="8" rx="1.5" fill={C1}/><rect x="12" y="12" width="8" height="8" rx="1.5" fill={C2}/><rect x="12" y="4" width="8" height="8" rx="1.5" fill={C2} opacity="0.6"/><rect x="4" y="12" width="8" height="8" rx="1.5" fill={C1} opacity="0.6"/></svg>,
+};
+
+// Fallback: simple magnet icon
+const defaultDayIcon = (
+  <svg width="22" height="22" viewBox="0 0 24 24">
+    <path d="M4 2h4v10a4 4 0 0 0 8 0V2h4v10a8 8 0 0 1-16 0V2z" fill={C2}/>
+    <rect x="4" y="2" width="4" height="4" rx="0.5" fill={C1}/>
+    <rect x="16" y="2" width="4" height="4" rx="0.5" fill={C1}/>
+  </svg>
+);
+
+function DayIcon({ emoji }: { emoji: string }) {
+  return <span className="weekly-day-icon">{dayIcons[emoji] ?? defaultDayIcon}</span>;
+}
+
+/** 자력 게이지 — 반원형 미터 5개 */
+function MagneticGauges({ attributes, color }: { attributes: Record<ChemiAttribute, number>; color: string }) {
   const attrs: ChemiAttribute[] = ['talk', 'humor', 'emotion', 'stability', 'passion'];
-  const width = 300;
-  const height = 80;
-  const padding = 20;
-  const segW = (width - padding * 2) / (attrs.length - 1);
-
-  // Build path from attribute scores
-  const points = attrs.map((attr, i) => {
-    const x = padding + i * segW;
-    const normalized = attributes[attr] / 100; // 0~1
-    const peakY = height - padding - normalized * (height - padding * 2);
-    return { x, y: peakY, attr };
-  });
-
-  // Create smooth ECG-like path with peaks
-  let d = `M ${points[0].x} ${height / 2}`;
-  points.forEach((pt, i) => {
-    const baseY = height / 2;
-    const preX = pt.x - segW * 0.15;
-    const postX = pt.x + segW * 0.15;
-    if (i === 0) {
-      d += ` L ${preX} ${baseY}`;
-    }
-    // Sharp peak up
-    d += ` L ${pt.x} ${pt.y}`;
-    // Back to baseline
-    d += ` L ${postX} ${baseY}`;
-    // Connect to next
-    if (i < points.length - 1) {
-      const nextPreX = points[i + 1].x - segW * 0.15;
-      d += ` L ${nextPreX} ${baseY}`;
-    }
-  });
-  d += ` L ${width - padding} ${height / 2}`;
+  const gaugeSize = 56;
+  const cx = gaugeSize / 2;
+  const cy = gaugeSize / 2;
+  const r = 22;
+  const strokeW = 5;
 
   return (
-    <div className="ecg-container">
-      <svg viewBox={`0 0 ${width} ${height}`} className="ecg-svg">
-        {/* Baseline */}
-        <line
-          x1={padding}
-          y1={height / 2}
-          x2={width - padding}
-          y2={height / 2}
-          stroke="#E0E0E0"
-          strokeWidth={1}
-          strokeDasharray="4 4"
-        />
-        {/* ECG path */}
-        <path
-          d={d}
-          fill="none"
-          stroke={color}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="ecg-path"
-        />
-        {/* Peak dots + labels */}
-        {points.map((pt, i) => (
-          <g key={attrs[i]}>
-            <circle cx={pt.x} cy={pt.y} r={3.5} fill={color} />
-            <text
-              x={pt.x}
-              y={height - 4}
-              textAnchor="middle"
-              fontSize={9}
-              fontWeight={600}
-              fontFamily="'Jalnan2', sans-serif"
-              fill="#757575"
-            >
-              {CHEMI_ATTRIBUTE_LABELS[attrs[i]]}
-            </text>
-          </g>
-        ))}
-      </svg>
+    <div className="gauge-container">
+      {attrs.map((attr) => {
+        const value = attributes[attr] / 100; // 0~1
+
+        // Arc angles: left (π) → right (0), counter-clockwise upward
+        const startAngle = Math.PI;
+        const sweepAngle = Math.PI * value;
+        const endAngle = startAngle - sweepAngle;
+
+        // Background arc endpoints (full semicircle: left to right)
+        const bgX1 = cx + r * Math.cos(startAngle); // left
+        const bgY1 = cy - r * Math.sin(startAngle);
+        const bgX2 = cx + r * Math.cos(0);           // right
+        const bgY2 = cy - r * Math.sin(0);
+
+        // Fill arc endpoint
+        const fillX2 = cx + r * Math.cos(endAngle);
+        const fillY2 = cy - r * Math.sin(endAngle);
+
+        // Needle endpoint
+        const needleLen = r - 3;
+        const needleX = cx + needleLen * Math.cos(endAngle);
+        const needleY = cy - needleLen * Math.sin(endAngle);
+
+        // sweep-flag=0 → counter-clockwise in SVG → draws UPWARD semicircle
+        const bgPath = `M ${bgX1} ${bgY1} A ${r} ${r} 0 0 0 ${bgX2} ${bgY2}`;
+        const fillPath = value > 0.01
+          ? `M ${bgX1} ${bgY1} A ${r} ${r} 0 0 0 ${fillX2} ${fillY2}`
+          : '';
+
+        return (
+          <div key={attr} className="gauge-item">
+            <svg width={gaugeSize} height={gaugeSize / 2 + 8} viewBox={`0 0 ${gaugeSize} ${gaugeSize / 2 + 8}`}>
+              {/* Background arc */}
+              <path d={bgPath} fill="none" stroke="#E8E8E8" strokeWidth={strokeW} strokeLinecap="round" />
+              {/* Filled arc */}
+              {fillPath && (
+                <path d={fillPath} fill="none" stroke={color} strokeWidth={strokeW} strokeLinecap="round" className="gauge-fill" />
+              )}
+              {/* Center pivot */}
+              <circle cx={cx} cy={cy} r={2.5} fill="#AAA" />
+              {/* Needle */}
+              <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#555" strokeWidth={1.5} strokeLinecap="round" />
+              {/* Needle tip */}
+              <circle cx={needleX} cy={needleY} r={2.5} fill={color} />
+            </svg>
+            <span className="gauge-label">{CHEMI_ATTRIBUTE_LABELS[attr]}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -125,7 +204,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
         <p className="result-description">{result.level.description}</p>
       </div>
 
-      {/* Magnetic Field Visualization — 핵심 시각, 가장 크게 */}
+      {/* Magnetic Field Visualization */}
       <div className="result-card section-gap">
         <MagneticField
           level={result.level.level}
@@ -138,28 +217,27 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
       <div className="result-card card section-gap">
         <div className="mascot-oneliner">
           <img src="/mascot/mascot-main-64.png" alt="끌림이" className="mascot-oneliner-img" />
-          <span className="mascot-oneliner-icon">🧲</span>
           <p className="mascot-oneliner-text">{result.oneLiner}</p>
         </div>
       </div>
 
-      {/* ECG Waveform — 5속성 통합 시각화 */}
+      {/* Magnetic Gauges — 5속성 자력 게이지 */}
       <div className="result-card card section-gap">
-        <p className="result-card-title">케미 파동</p>
-        <ECGWaveform attributes={result.attributes} color={result.level.color} />
-        <div className="ecg-summary">
-          <span className="ecg-summary-item ecg-strong">
-            <i className="ri-arrow-up-circle-fill" style={{ color: result.level.color }} />
-            {CHEMI_ATTRIBUTE_LABELS[strongest.attr]}이 가장 강해!
+        <p className="result-card-title">케미 자력 분석</p>
+        <MagneticGauges attributes={result.attributes} color={result.level.color} />
+        <div className="gauge-summary">
+          <span className="gauge-summary-item gauge-strong">
+            <SvgArrowUp color={result.level.color} />
+            {CHEMI_ATTRIBUTE_LABELS[strongest.attr]}{hasJongseong(CHEMI_ATTRIBUTE_LABELS[strongest.attr]) ? '이' : '가'} 가장 강해!
           </span>
-          <span className="ecg-summary-item ecg-weak">
-            <i className="ri-arrow-down-circle-fill" style={{ color: '#BDBDBD' }} />
-            {CHEMI_ATTRIBUTE_LABELS[weakest.attr]}은 좀 더 키워봐~
+          <span className="gauge-summary-item gauge-weak">
+            <SvgArrowDown color="#BDBDBD" />
+            {CHEMI_ATTRIBUTE_LABELS[weakest.attr]}{hasJongseong(CHEMI_ATTRIBUTE_LABELS[weakest.attr]) ? '은' : '는'} 좀 더 키워봐~
           </span>
         </div>
       </div>
 
-      {/* Date Scenario — 정보 덩어리화 (5속성 → 1문장) */}
+      {/* Date Scenario */}
       <div className="result-card card section-gap">
         <p className="result-card-title">이런 데이트 어때?</p>
         <p className="result-card-content scenario-text">
@@ -167,7 +245,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
         </p>
       </div>
 
-      {/* Mascot Speech Bubble — 끌림이 조언 */}
+      {/* Mascot Speech Bubble */}
       <div className="mascot-advice-section section-gap">
         <div className="mascot-advice-bubble">
           <img
@@ -175,7 +253,6 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
             alt="끌림이"
             className="mascot-advice-img"
           />
-          <span className="mascot-advice-icon">🧲</span>
           <div className="speech-bubble">
             <span className="speech-bubble-label">끌림이의 한마디</span>
             <p className="speech-bubble-text">
@@ -201,9 +278,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
                 {weeklyForecast.forecasts.map((f) => (
                   <div key={f.day} className="weekly-day">
                     <span className="weekly-day-label">{f.label}</span>
-                    <span className="weekly-day-emoji">
-                      {f.emojiPair[0]}
-                    </span>
+                    <DayIcon emoji={f.emojiPair[0]} />
                     <p className="weekly-day-msg">{f.message}</p>
                   </div>
                 ))}
@@ -211,7 +286,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
             </div>
           ) : (
             <div className="premium-locked">
-              <span className="premium-locked-icon">🔒</span>
+              <SvgLock />
               <p className="premium-locked-title">이번 주 케미 전망</p>
               <p className="premium-locked-desc">
                 요일별 두 사람의 케미 변화를 확인해봐!
@@ -233,7 +308,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
       {/* Retry */}
       <div className="retry-section">
         <button className="btn-secondary" onClick={onRetry}>
-          <i className="ri-refresh-line" /> 다른 이름으로 측정하기
+          <SvgRefresh /> 다른 이름으로 측정하기
         </button>
       </div>
     </div>
