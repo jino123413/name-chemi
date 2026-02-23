@@ -11,9 +11,9 @@
     "deploy": "ait deploy"
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "1.5.2",
-    "@granite-js/plugin-router": "0.1.21",
+    "@apps-in-toss/web-framework": "^1.13.0",
     "@granite-js/native": "^0.1.0",
+    "@granite-js/plugin-router": "0.1.21",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "nanoid": "^5.0.9",

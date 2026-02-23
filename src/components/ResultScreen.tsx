@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChemiResult, WeeklyChemiForecast, ATTRACTION_LEVELS, CHEMI_ATTRIBUTE_LABELS, ChemiAttribute } from '../types';
 import { getStrongestAttribute, getWeakestAttribute } from '../utils/chemi-engine';
 import MagneticField from './MagneticField';
+import BannerAd from './BannerAd';
 
 interface ResultScreenProps {
   result: ChemiResult;
@@ -381,6 +382,11 @@ const ResultScreen: React.FC<ResultScreenProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Banner Ad */}
+      <div className="section-gap" style={{ padding: '0 16px' }}>
+        <BannerAd adGroupId="ait.v2.live.209df8c43e194fda" />
       </div>
 
       {/* Retry */}
